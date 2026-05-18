@@ -11,7 +11,12 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as ApplyRouteImport } from './routes/apply'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as EvaluatorQueueRouteImport } from './routes/evaluator.queue'
+import { Route as EvaluatorReviewIdRouteImport } from './routes/evaluator.review.$id'
+import { Route as ApplicantEvaluationIdRouteImport } from './routes/applicant.evaluation.$id'
 
 const DashboardRoute = DashboardRouteImport.update({
   id: '/dashboard',
@@ -23,40 +28,110 @@ const AuthRoute = AuthRouteImport.update({
   path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApplyRoute = ApplyRouteImport.update({
+  id: '/apply',
+  path: '/apply',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const EvaluatorQueueRoute = EvaluatorQueueRouteImport.update({
+  id: '/evaluator/queue',
+  path: '/evaluator/queue',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EvaluatorReviewIdRoute = EvaluatorReviewIdRouteImport.update({
+  id: '/evaluator/review/$id',
+  path: '/evaluator/review/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApplicantEvaluationIdRoute = ApplicantEvaluationIdRouteImport.update({
+  id: '/applicant/evaluation/$id',
+  path: '/applicant/evaluation/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
+  '/apply': typeof ApplyRoute
   '/auth': typeof AuthRoute
   '/dashboard': typeof DashboardRoute
+  '/evaluator/queue': typeof EvaluatorQueueRoute
+  '/applicant/evaluation/$id': typeof ApplicantEvaluationIdRoute
+  '/evaluator/review/$id': typeof EvaluatorReviewIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
+  '/apply': typeof ApplyRoute
   '/auth': typeof AuthRoute
   '/dashboard': typeof DashboardRoute
+  '/evaluator/queue': typeof EvaluatorQueueRoute
+  '/applicant/evaluation/$id': typeof ApplicantEvaluationIdRoute
+  '/evaluator/review/$id': typeof EvaluatorReviewIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
+  '/apply': typeof ApplyRoute
   '/auth': typeof AuthRoute
   '/dashboard': typeof DashboardRoute
+  '/evaluator/queue': typeof EvaluatorQueueRoute
+  '/applicant/evaluation/$id': typeof ApplicantEvaluationIdRoute
+  '/evaluator/review/$id': typeof EvaluatorReviewIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/dashboard'
+  fullPaths:
+    | '/'
+    | '/admin'
+    | '/apply'
+    | '/auth'
+    | '/dashboard'
+    | '/evaluator/queue'
+    | '/applicant/evaluation/$id'
+    | '/evaluator/review/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/dashboard'
-  id: '__root__' | '/' | '/auth' | '/dashboard'
+  to:
+    | '/'
+    | '/admin'
+    | '/apply'
+    | '/auth'
+    | '/dashboard'
+    | '/evaluator/queue'
+    | '/applicant/evaluation/$id'
+    | '/evaluator/review/$id'
+  id:
+    | '__root__'
+    | '/'
+    | '/admin'
+    | '/apply'
+    | '/auth'
+    | '/dashboard'
+    | '/evaluator/queue'
+    | '/applicant/evaluation/$id'
+    | '/evaluator/review/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRoute: typeof AdminRoute
+  ApplyRoute: typeof ApplyRoute
   AuthRoute: typeof AuthRoute
   DashboardRoute: typeof DashboardRoute
+  EvaluatorQueueRoute: typeof EvaluatorQueueRoute
+  ApplicantEvaluationIdRoute: typeof ApplicantEvaluationIdRoute
+  EvaluatorReviewIdRoute: typeof EvaluatorReviewIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -75,6 +150,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/apply': {
+      id: '/apply'
+      path: '/apply'
+      fullPath: '/apply'
+      preLoaderRoute: typeof ApplyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -82,13 +171,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/evaluator/queue': {
+      id: '/evaluator/queue'
+      path: '/evaluator/queue'
+      fullPath: '/evaluator/queue'
+      preLoaderRoute: typeof EvaluatorQueueRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/evaluator/review/$id': {
+      id: '/evaluator/review/$id'
+      path: '/evaluator/review/$id'
+      fullPath: '/evaluator/review/$id'
+      preLoaderRoute: typeof EvaluatorReviewIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/applicant/evaluation/$id': {
+      id: '/applicant/evaluation/$id'
+      path: '/applicant/evaluation/$id'
+      fullPath: '/applicant/evaluation/$id'
+      preLoaderRoute: typeof ApplicantEvaluationIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRoute: AdminRoute,
+  ApplyRoute: ApplyRoute,
   AuthRoute: AuthRoute,
   DashboardRoute: DashboardRoute,
+  EvaluatorQueueRoute: EvaluatorQueueRoute,
+  ApplicantEvaluationIdRoute: ApplicantEvaluationIdRoute,
+  EvaluatorReviewIdRoute: EvaluatorReviewIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
