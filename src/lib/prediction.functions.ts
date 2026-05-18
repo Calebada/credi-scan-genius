@@ -22,11 +22,12 @@ export const runPrediction = createServerFn({ method: "POST" })
     ]);
     if (!curr) throw new Error("No curriculum");
 
+    const creditedStatuses = new Set(["auto_credited", "evaluator_approved", "evaluator_added", "evaluator_overridden"]);
     const credited = new Set(
-      (matches ?? []).filter((m) => m.curriculum_subject_id && (m.status === "auto_approved" || m.status === "approved")).map((m) => m.curriculum_subject_id as string),
+      (matches ?? []).filter((m) => m.curriculum_subject_id && creditedStatuses.has(m.status)).map((m) => m.curriculum_subject_id as string),
     );
     const pending = new Set(
-      (matches ?? []).filter((m) => m.curriculum_subject_id && m.status === "needs_review").map((m) => m.curriculum_subject_id as string),
+      (matches ?? []).filter((m) => m.curriculum_subject_id && m.status === "tentative").map((m) => m.curriculum_subject_id as string),
     );
 
     const codeToId = new Map(curr.map((c) => [c.code, c.id]));

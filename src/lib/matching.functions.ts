@@ -59,7 +59,8 @@ export const runMatching = createServerFn({ method: "POST" })
         m.curriculum_subject_id &&
         seen.get(m.curriculum_subject_id)?.tor === m.tor_subject_id;
       const conf = useCurr ? m.confidence : m.curriculum_subject_id ? Math.min(m.confidence, 55) : m.confidence;
-      const status = conf >= 85 ? "auto_approved" : conf >= 60 ? "needs_review" : "rejected";
+      const status: "auto_credited" | "tentative" | "rejected" =
+        conf >= 85 ? "auto_credited" : conf >= 60 ? "tentative" : "rejected";
       return {
         application_id: data.applicationId,
         tor_subject_id: m.tor_subject_id,
@@ -75,8 +76,11 @@ export const runMatching = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
 
     // Update application status
-    const anyReview = rows.some((r) => r.status !== "auto_approved");
-    await supabaseAdmin.from("applications").update({ status: anyReview ? "in_review" : "matched" }).eq("id", data.applicationId);
+    const anyReview = rows.some((r) => r.status !== "auto_credited");
+    await supabaseAdmin
+      .from("applications")
+      .update({ status: anyReview ? "pending_review" : "auto_finalized" })
+      .eq("id", data.applicationId);
 
     return { matched: rows.length };
   });
