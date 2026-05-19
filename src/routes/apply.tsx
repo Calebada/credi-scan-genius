@@ -30,6 +30,8 @@ function ApplyPage() {
   const [priorProgram, setPriorProgram] = useState("");
   const [years, setYears] = useState(0);
   const [file, setFile] = useState<File | null>(null);
+  const [jobDescFile, setJobDescFile] = useState<File | null>(null);
+  const [certFiles, setCertFiles] = useState<File[]>([]);
   const [step, setStep] = useState<"form" | "uploading" | "ocr" | "matching" | "predicting">("form");
   const [appId, setAppId] = useState<string | null>(null);
 
