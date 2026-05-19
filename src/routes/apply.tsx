@@ -181,6 +181,48 @@ function ApplyPage() {
               </Label>
             </div>
 
+            <div className="rounded-lg border-2 border-dashed border-border bg-accent/20 p-6">
+              <Label className="flex cursor-pointer flex-col items-center gap-2 text-center">
+                <Upload className="h-6 w-6 text-primary" />
+                <span className="font-medium text-primary-deep">
+                  {jobDescFile ? jobDescFile.name : "Upload Job Description (optional)"}
+                </span>
+                <span className="text-xs text-muted-foreground">Current or prior role — PDF, JPG, or PNG</span>
+                <input
+                  type="file"
+                  accept="application/pdf,image/jpeg,image/png"
+                  className="hidden"
+                  disabled={busy}
+                  onChange={(e) => setJobDescFile(e.target.files?.[0] ?? null)}
+                />
+              </Label>
+            </div>
+
+            <div className="rounded-lg border-2 border-dashed border-border bg-accent/20 p-6">
+              <Label className="flex cursor-pointer flex-col items-center gap-2 text-center">
+                <Upload className="h-6 w-6 text-primary" />
+                <span className="font-medium text-primary-deep">
+                  {certFiles.length > 0
+                    ? `${certFiles.length} certificate${certFiles.length > 1 ? "s" : ""} selected`
+                    : "Upload Certificates (optional)"}
+                </span>
+                <span className="text-xs text-muted-foreground">Trainings, seminars, awards — select multiple</span>
+                <input
+                  type="file"
+                  accept="application/pdf,image/jpeg,image/png"
+                  multiple
+                  className="hidden"
+                  disabled={busy}
+                  onChange={(e) => setCertFiles(Array.from(e.target.files ?? []))}
+                />
+              </Label>
+              {certFiles.length > 0 && (
+                <ul className="mt-3 space-y-1 text-xs text-muted-foreground">
+                  {certFiles.map((f, i) => <li key={i}>• {f.name}</li>)}
+                </ul>
+              )}
+            </div>
+
             <Button type="submit" size="lg" disabled={busy || !file} className="w-full bg-primary text-primary-foreground hover:bg-primary-deep">
               {busy && <Loader2 className="h-4 w-4 animate-spin" />}
               {step === "form" && "Submit & analyze"}
