@@ -340,6 +340,33 @@ export type Database = {
           },
         ]
       }
+      supporting_documents: {
+        Row: {
+          application_id: string
+          created_at: string
+          doc_type: Database["public"]["Enums"]["supporting_doc_type"]
+          file_path: string
+          id: string
+          original_name: string | null
+        }
+        Insert: {
+          application_id: string
+          created_at?: string
+          doc_type: Database["public"]["Enums"]["supporting_doc_type"]
+          file_path: string
+          id?: string
+          original_name?: string | null
+        }
+        Update: {
+          application_id?: string
+          created_at?: string
+          doc_type?: Database["public"]["Enums"]["supporting_doc_type"]
+          file_path?: string
+          id?: string
+          original_name?: string | null
+        }
+        Relationships: []
+      }
       tor_documents: {
         Row: {
           application_id: string
@@ -463,6 +490,7 @@ export type Database = {
         | "evaluator_approved"
         | "evaluator_overridden"
         | "evaluator_added"
+      supporting_doc_type: "job_description" | "certificate" | "other"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -609,6 +637,7 @@ export const Constants = {
         "evaluator_overridden",
         "evaluator_added",
       ],
+      supporting_doc_type: ["job_description", "certificate", "other"],
     },
   },
 } as const
