@@ -134,7 +134,7 @@ function Review() {
         </div>
 
         <Card className="mt-6 p-5">
-          <p className="mb-2 font-display text-lg text-primary-deep">Evaluator remarks</p>
+          <p className="mb-2 font-display text-lg text-primary-deep">Department Chair remarks</p>
           <Textarea value={remarks} onChange={(e) => setRemarks(e.target.value)} rows={3} placeholder="Notes that will appear on the final report…" />
         </Card>
       </main>

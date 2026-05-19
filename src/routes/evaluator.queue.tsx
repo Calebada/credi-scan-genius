@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
 export const Route = createFileRoute("/evaluator/queue")({
-  head: () => ({ meta: [{ title: "Evaluator queue — ACREDIA" }] }),
+  head: () => ({ meta: [{ title: "Department Chair queue — ACREDIA" }] }),
   component: Queue,
 });
 
@@ -32,7 +32,7 @@ function Queue() {
     <div className="min-h-screen bg-background">
       <AppHeader />
       <main className="container mx-auto max-w-5xl px-6 py-12">
-        <h1 className="font-display text-4xl text-primary-deep">Evaluator queue</h1>
+        <h1 className="font-display text-4xl text-primary-deep">Department Chair queue</h1>
         <p className="mt-1 text-muted-foreground">Applications awaiting review or finalization.</p>
 
         <div className="mt-8 space-y-3">

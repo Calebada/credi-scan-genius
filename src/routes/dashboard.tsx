@@ -59,7 +59,7 @@ function Dashboard() {
             <Link to="/evaluator/queue">
               <Card className="p-6 transition hover:border-primary hover:shadow-card">
                 <ShieldCheck className="h-7 w-7 text-primary" />
-                <h2 className="mt-3 font-display text-2xl text-primary-deep">Evaluator queue</h2>
+                <h2 className="mt-3 font-display text-2xl text-primary-deep">Department Chair queue</h2>
                 <p className="mt-1 text-sm text-muted-foreground">Review and finalize applications.</p>
                 <Button variant="link" className="px-0 text-primary">Open queue <ArrowRight className="h-4 w-4" /></Button>
               </Card>
