@@ -490,7 +490,13 @@ export type Database = {
         | "evaluator_approved"
         | "evaluator_overridden"
         | "evaluator_added"
-      supporting_doc_type: "job_description" | "certificate" | "other"
+      supporting_doc_type:
+        | "job_description"
+        | "certificate"
+        | "other"
+        | "transfer_credential"
+        | "birth_certificate"
+        | "employment_cert"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -637,7 +643,14 @@ export const Constants = {
         "evaluator_overridden",
         "evaluator_added",
       ],
-      supporting_doc_type: ["job_description", "certificate", "other"],
+      supporting_doc_type: [
+        "job_description",
+        "certificate",
+        "other",
+        "transfer_credential",
+        "birth_certificate",
+        "employment_cert",
+      ],
     },
   },
 } as const
