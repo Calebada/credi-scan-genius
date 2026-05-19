@@ -7,59 +7,197 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { runOcrOnTor } from "@/lib/ocr.functions";
 import { runMatching } from "@/lib/matching.functions";
 import { runPrediction } from "@/lib/prediction.functions";
-import { Upload, Loader2 } from "lucide-react";
+import { suggestProgramsFromJD } from "@/lib/programs.functions";
+import { Upload, Loader2, FileText, ScanLine, GraduationCap, Sparkles, CheckCircle2 } from "lucide-react";
 
 export const Route = createFileRoute("/apply")({
   head: () => ({ meta: [{ title: "New application — ACREDIA" }] }),
   component: ApplyPage,
 });
 
+type Step = "info" | "documents" | "suggest" | "processing" | "done";
+
+type Suggestion = { id: string; code: string; name: string; reason: string; score: number };
+
+function Uploader({
+  label,
+  hint,
+  file,
+  files,
+  multiple,
+  required,
+  onChange,
+  disabled,
+}: {
+  label: string;
+  hint: string;
+  file?: File | null;
+  files?: File[];
+  multiple?: boolean;
+  required?: boolean;
+  onChange: (f: FileList | null) => void;
+  disabled?: boolean;
+}) {
+  const hasFile = multiple ? (files?.length ?? 0) > 0 : !!file;
+  return (
+    <div className="rounded-lg border-2 border-dashed border-border bg-accent/20 p-5 transition hover:border-primary/50">
+      <Label className="flex cursor-pointer flex-col items-center gap-1.5 text-center">
+        {hasFile ? (
+          <CheckCircle2 className="h-6 w-6 text-primary" />
+        ) : (
+          <Upload className="h-6 w-6 text-primary" />
+        )}
+        <span className="font-medium text-primary-deep">
+          {multiple
+            ? (files?.length ?? 0) > 0
+              ? `${files!.length} file${files!.length > 1 ? "s" : ""} selected`
+              : label
+            : file?.name ?? label}
+        </span>
+        <span className="text-xs text-muted-foreground">
+          {hint}
+          {required ? " · required" : " · optional"}
+        </span>
+        <input
+          type="file"
+          accept="application/pdf,image/jpeg,image/png"
+          multiple={multiple}
+          required={required}
+          disabled={disabled}
+          className="hidden"
+          onChange={(e) => onChange(e.target.files)}
+        />
+      </Label>
+      {multiple && files && files.length > 0 && (
+        <ul className="mt-3 space-y-1 text-xs text-muted-foreground">
+          {files.map((f, i) => (
+            <li key={i}>• {f.name}</li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 function ApplyPage() {
   const { user, loading: authLoading, profile } = useAuth();
   const navigate = useNavigate();
+
+  const [step, setStep] = useState<Step>("info");
   const [programs, setPrograms] = useState<{ id: string; code: string; name: string }[]>([]);
   const [programId, setProgramId] = useState("");
   const [fullName, setFullName] = useState("");
   const [school, setSchool] = useState("");
   const [priorProgram, setPriorProgram] = useState("");
   const [years, setYears] = useState(0);
-  const [file, setFile] = useState<File | null>(null);
-  const [jobDescFile, setJobDescFile] = useState<File | null>(null);
-  const [certFiles, setCertFiles] = useState<File[]>([]);
-  const [step, setStep] = useState<"form" | "uploading" | "ocr" | "matching" | "predicting">("form");
-  const [appId, setAppId] = useState<string | null>(null);
+
+  // documents
+  const [tor, setTor] = useState<File | null>(null);
+  const [transferCred, setTransferCred] = useState<File | null>(null);
+  const [birthCert, setBirthCert] = useState<File | null>(null);
+  const [jobDesc, setJobDesc] = useState<File | null>(null);
+  const [employmentCerts, setEmploymentCerts] = useState<File[]>([]);
+  const [otherCerts, setOtherCerts] = useState<File[]>([]);
+
+  // ai suggestions
+  const [suggesting, setSuggesting] = useState(false);
+  const [suggestions, setSuggestions] = useState<Suggestion[] | null>(null);
+  const [industryLabel, setIndustryLabel] = useState<string | null>(null);
+
+  // processing
+  const [phase, setPhase] = useState<
+    | "uploading"
+    | "ocr"
+    | "matching"
+    | "predicting"
+    | null
+  >(null);
 
   const ocrFn = useServerFn(runOcrOnTor);
   const matchFn = useServerFn(runMatching);
   const predictFn = useServerFn(runPrediction);
+  const suggestFn = useServerFn(suggestProgramsFromJD);
 
   useEffect(() => {
     if (!authLoading && !user) navigate({ to: "/auth" });
   }, [authLoading, user, navigate]);
 
   useEffect(() => {
-    supabase.from("programs").select("id, code, name").then(({ data }) => {
-      if (data) {
-        setPrograms(data);
-        if (data[0]) setProgramId(data[0].id);
-      }
-    });
-  }, []);
+    supabase
+      .from("programs")
+      .select("id, code, name")
+      .then(({ data }) => {
+        if (data) {
+          setPrograms(data);
+          if (data[0] && !programId) setProgramId(data[0].id);
+        }
+      });
+  }, [programId]);
 
-  useEffect(() => { if (profile?.full_name) setFullName(profile.full_name); }, [profile]);
+  useEffect(() => {
+    if (profile?.full_name) setFullName(profile.full_name);
+  }, [profile]);
 
-  async function submit(e: React.FormEvent) {
+  /* ---------------- Step navigation ---------------- */
+
+  function goToDocuments(e: React.FormEvent) {
     e.preventDefault();
-    if (!file || !user) return;
-    setStep("uploading");
+    if (!fullName.trim()) {
+      toast.error("Please enter your full name");
+      return;
+    }
+    setStep("documents");
+  }
+
+  /** Upload JD only to get program suggestions before final submission. */
+  async function analyzeJD() {
+    if (!jobDesc || !user) return;
+    setSuggesting(true);
+    setStep("suggest");
     try {
-      // 1. Insert application
+      const ext = jobDesc.name.split(".").pop()?.toLowerCase() ?? "pdf";
+      const tmpPath = `${user.id}/_jd-preview/${crypto.randomUUID()}.${ext}`;
+      const { error: upErr } = await supabase.storage
+        .from("supporting-documents")
+        .upload(tmpPath, jobDesc, { upsert: true });
+      if (upErr) throw new Error(upErr.message);
+
+      const res = await suggestFn({ data: { filePath: tmpPath } });
+      setSuggestions(res.suggestions as Suggestion[]);
+      setIndustryLabel(res.industry ?? null);
+      if (res.suggestions[0]) setProgramId(res.suggestions[0].id);
+      toast.success("AI found program matches based on your job description");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "JD analysis failed");
+      setStep("documents");
+    } finally {
+      setSuggesting(false);
+    }
+  }
+
+  function skipSuggestions() {
+    setSuggestions([]);
+    setStep("suggest");
+  }
+
+  /* ---------------- Final submission ---------------- */
+
+  async function submitAll() {
+    if (!tor || !user) {
+      toast.error("Transcript of Records is required");
+      return;
+    }
+    setStep("processing");
+    setPhase("uploading");
+
+    try {
       const { data: app, error } = await supabase
         .from("applications")
         .insert({
@@ -74,12 +212,13 @@ function ApplyPage() {
         .select("id")
         .single();
       if (error || !app) throw new Error(error?.message ?? "Failed to create application");
-      setAppId(app.id);
 
-      // 2. Upload TOR to storage
-      const ext = file.name.split(".").pop()?.toLowerCase() ?? "pdf";
+      // TOR upload
+      const ext = tor.name.split(".").pop()?.toLowerCase() ?? "pdf";
       const path = `${user.id}/${app.id}.${ext}`;
-      const { error: upErr } = await supabase.storage.from("tor-documents").upload(path, file, { upsert: true });
+      const { error: upErr } = await supabase.storage
+        .from("tor-documents")
+        .upload(path, tor, { upsert: true });
       if (upErr) throw new Error(upErr.message);
 
       const { data: doc, error: docErr } = await supabase
@@ -89,151 +228,292 @@ function ApplyPage() {
         .single();
       if (docErr || !doc) throw new Error(docErr?.message ?? "TOR record failed");
 
-      // 2b. Upload supporting documents (job description + certificates)
-      const supportingUploads: { file: File; type: "job_description" | "certificate" }[] = [];
-      if (jobDescFile) supportingUploads.push({ file: jobDescFile, type: "job_description" });
-      for (const c of certFiles) supportingUploads.push({ file: c, type: "certificate" });
-      for (const item of supportingUploads) {
+      // supporting docs
+      const supporting: { file: File; type: "job_description" | "certificate" | "transfer_credential" | "birth_certificate" | "employment_cert" }[] = [];
+      if (jobDesc) supporting.push({ file: jobDesc, type: "job_description" });
+      if (transferCred) supporting.push({ file: transferCred, type: "transfer_credential" });
+      if (birthCert) supporting.push({ file: birthCert, type: "birth_certificate" });
+      for (const f of employmentCerts) supporting.push({ file: f, type: "employment_cert" });
+      for (const f of otherCerts) supporting.push({ file: f, type: "certificate" });
+
+      for (const item of supporting) {
         const sext = item.file.name.split(".").pop()?.toLowerCase() ?? "pdf";
         const spath = `${user.id}/${app.id}/${item.type}-${crypto.randomUUID()}.${sext}`;
-        const { error: sUpErr } = await supabase.storage.from("supporting-documents").upload(spath, item.file, { upsert: false });
+        const { error: sUpErr } = await supabase.storage
+          .from("supporting-documents")
+          .upload(spath, item.file, { upsert: false });
         if (sUpErr) throw new Error(sUpErr.message);
-        const { error: sDbErr } = await supabase.from("supporting_documents").insert({
+        await supabase.from("supporting_documents").insert({
           application_id: app.id,
           doc_type: item.type,
           file_path: spath,
           original_name: item.file.name,
         });
-        if (sDbErr) throw new Error(sDbErr.message);
       }
 
-      // 3. OCR
-      setStep("ocr");
-      toast.info("Extracting subjects from your TOR…");
+      setPhase("ocr");
       await ocrFn({ data: { applicationId: app.id, torDocumentId: doc.id } });
 
-      // 4. Match
-      setStep("matching");
-      toast.info("Matching against the curriculum…");
+      setPhase("matching");
       await matchFn({ data: { applicationId: app.id } });
 
-      // 5. Predict
-      setStep("predicting");
+      setPhase("predicting");
       await predictFn({ data: { applicationId: app.id } });
 
       toast.success("Evaluation ready!");
       navigate({ to: "/applicant/evaluation/$id", params: { id: app.id } });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Submission failed");
-      setStep("form");
+      setStep("suggest");
+      setPhase(null);
     }
   }
 
-  const busy = step !== "form";
+  const stepIndex = { info: 0, documents: 1, suggest: 2, processing: 3, done: 3 }[step];
+  const progress = ((stepIndex + 1) / 4) * 100;
 
   return (
     <div className="min-h-screen bg-background">
       <AppHeader />
       <main className="container mx-auto max-w-3xl px-6 py-12">
         <h1 className="font-display text-4xl text-primary-deep">New ETEEAP application</h1>
-        <p className="mt-2 text-muted-foreground">Fill in your details and upload your Transcript of Records. The AI will do the rest.</p>
+        <p className="mt-2 text-muted-foreground">
+          Complete the wizard below — our AI will analyze your documents and recommend a program.
+        </p>
 
-        <Card className="mt-8 p-8">
-          <form onSubmit={submit} className="space-y-5">
-            <div>
-              <Label htmlFor="name">Full name</Label>
-              <Input id="name" required value={fullName} onChange={(e) => setFullName(e.target.value)} disabled={busy} />
-            </div>
-            <div>
-              <Label htmlFor="prog">Target CIT-U program</Label>
-              <select id="prog" required value={programId} onChange={(e) => setProgramId(e.target.value)} disabled={busy} className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm">
-                {programs.map((p) => <option key={p.id} value={p.id}>{p.code} — {p.name}</option>)}
-              </select>
-            </div>
-            <div className="grid gap-4 md:grid-cols-2">
+        <div className="mt-6">
+          <Progress value={progress} className="h-2" />
+          <div className="mt-2 flex justify-between text-xs text-muted-foreground">
+            <span className={step === "info" ? "font-semibold text-primary" : ""}>1. Personal info</span>
+            <span className={step === "documents" ? "font-semibold text-primary" : ""}>2. Upload documents</span>
+            <span className={step === "suggest" ? "font-semibold text-primary" : ""}>3. Pick program</span>
+            <span className={step === "processing" ? "font-semibold text-primary" : ""}>4. AI evaluation</span>
+          </div>
+        </div>
+
+        {step === "info" && (
+          <Card className="mt-8 p-8">
+            <form onSubmit={goToDocuments} className="space-y-5">
               <div>
-                <Label htmlFor="school">Prior school</Label>
-                <Input id="school" value={school} onChange={(e) => setSchool(e.target.value)} disabled={busy} />
+                <Label htmlFor="name">Full name</Label>
+                <Input id="name" required value={fullName} onChange={(e) => setFullName(e.target.value)} />
+              </div>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div>
+                  <Label htmlFor="school">Prior school</Label>
+                  <Input id="school" value={school} onChange={(e) => setSchool(e.target.value)} />
+                </div>
+                <div>
+                  <Label htmlFor="pp">Prior program</Label>
+                  <Input id="pp" value={priorProgram} onChange={(e) => setPriorProgram(e.target.value)} />
+                </div>
               </div>
               <div>
-                <Label htmlFor="pp">Prior program</Label>
-                <Input id="pp" value={priorProgram} onChange={(e) => setPriorProgram(e.target.value)} disabled={busy} />
+                <Label htmlFor="years">Years of relevant work experience</Label>
+                <Input
+                  id="years"
+                  type="number"
+                  min={0}
+                  value={years}
+                  onChange={(e) => setYears(parseInt(e.target.value) || 0)}
+                />
               </div>
-            </div>
+              <Button type="submit" size="lg" className="w-full bg-primary text-primary-foreground hover:bg-primary-deep">
+                Continue to documents
+              </Button>
+            </form>
+          </Card>
+        )}
+
+        {step === "documents" && (
+          <Card className="mt-8 space-y-6 p-8">
             <div>
-              <Label htmlFor="years">Years of relevant work experience</Label>
-              <Input id="years" type="number" min={0} value={years} onChange={(e) => setYears(parseInt(e.target.value) || 0)} disabled={busy} />
+              <div className="mb-2 flex items-center gap-2">
+                <FileText className="h-5 w-5 text-primary" />
+                <h2 className="font-display text-xl text-primary-deep">Required documents</h2>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                The system will verify legibility. Blurry scans will be rejected with feedback to re-upload.
+              </p>
             </div>
 
-            <div className="rounded-lg border-2 border-dashed border-border bg-accent/30 p-6">
-              <Label className="flex cursor-pointer flex-col items-center gap-2 text-center">
-                <Upload className="h-7 w-7 text-primary" />
-                <span className="font-medium text-primary-deep">{file ? file.name : "Upload Transcript of Records"}</span>
-                <span className="text-xs text-muted-foreground">PDF, JPG, or PNG</span>
-                <input
-                  type="file"
-                  accept="application/pdf,image/jpeg,image/png"
-                  className="hidden"
-                  required
-                  disabled={busy}
-                  onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-                />
-              </Label>
-            </div>
+            <Uploader
+              label="Upload Transcript of Records"
+              hint="From your last school attended — PDF/JPG/PNG"
+              file={tor}
+              required
+              onChange={(fl) => setTor(fl?.[0] ?? null)}
+            />
+            <Uploader
+              label="Certificate of Transfer Credential"
+              hint="From the school of last attendance"
+              file={transferCred}
+              onChange={(fl) => setTransferCred(fl?.[0] ?? null)}
+            />
+            <Uploader
+              label="Birth Certificate (PSA-authenticated)"
+              hint="Scanned PSA copy"
+              file={birthCert}
+              onChange={(fl) => setBirthCert(fl?.[0] ?? null)}
+            />
+            <Uploader
+              label="Job Description"
+              hint="We'll use this to suggest the best CIT-U program for you"
+              file={jobDesc}
+              onChange={(fl) => setJobDesc(fl?.[0] ?? null)}
+            />
+            <Uploader
+              label="Certifications of Employment"
+              hint="With detailed job description certified by HRD — multiple allowed"
+              files={employmentCerts}
+              multiple
+              onChange={(fl) => setEmploymentCerts(Array.from(fl ?? []))}
+            />
+            <Uploader
+              label="Other certificates (trainings, seminars, awards)"
+              hint="Optional supporting credentials"
+              files={otherCerts}
+              multiple
+              onChange={(fl) => setOtherCerts(Array.from(fl ?? []))}
+            />
 
-            <div className="rounded-lg border-2 border-dashed border-border bg-accent/20 p-6">
-              <Label className="flex cursor-pointer flex-col items-center gap-2 text-center">
-                <Upload className="h-6 w-6 text-primary" />
-                <span className="font-medium text-primary-deep">
-                  {jobDescFile ? jobDescFile.name : "Upload Job Description (optional)"}
-                </span>
-                <span className="text-xs text-muted-foreground">Current or prior role — PDF, JPG, or PNG</span>
-                <input
-                  type="file"
-                  accept="application/pdf,image/jpeg,image/png"
-                  className="hidden"
-                  disabled={busy}
-                  onChange={(e) => setJobDescFile(e.target.files?.[0] ?? null)}
-                />
-              </Label>
+            <div className="flex gap-3">
+              <Button variant="outline" onClick={() => setStep("info")}>Back</Button>
+              {jobDesc ? (
+                <Button
+                  className="flex-1 bg-primary text-primary-foreground hover:bg-primary-deep"
+                  onClick={analyzeJD}
+                  disabled={!tor}
+                >
+                  <Sparkles className="mr-1 h-4 w-4" />
+                  Analyze job description & suggest programs
+                </Button>
+              ) : (
+                <Button
+                  className="flex-1 bg-primary text-primary-foreground hover:bg-primary-deep"
+                  onClick={skipSuggestions}
+                  disabled={!tor}
+                >
+                  Continue
+                </Button>
+              )}
             </div>
+          </Card>
+        )}
 
-            <div className="rounded-lg border-2 border-dashed border-border bg-accent/20 p-6">
-              <Label className="flex cursor-pointer flex-col items-center gap-2 text-center">
-                <Upload className="h-6 w-6 text-primary" />
-                <span className="font-medium text-primary-deep">
-                  {certFiles.length > 0
-                    ? `${certFiles.length} certificate${certFiles.length > 1 ? "s" : ""} selected`
-                    : "Upload Certificates (optional)"}
-                </span>
-                <span className="text-xs text-muted-foreground">Trainings, seminars, awards — select multiple</span>
-                <input
-                  type="file"
-                  accept="application/pdf,image/jpeg,image/png"
-                  multiple
-                  className="hidden"
-                  disabled={busy}
-                  onChange={(e) => setCertFiles(Array.from(e.target.files ?? []))}
-                />
-              </Label>
-              {certFiles.length > 0 && (
-                <ul className="mt-3 space-y-1 text-xs text-muted-foreground">
-                  {certFiles.map((f, i) => <li key={i}>• {f.name}</li>)}
-                </ul>
+        {step === "suggest" && (
+          <Card className="mt-8 space-y-5 p-8">
+            <div>
+              <div className="mb-2 flex items-center gap-2">
+                <GraduationCap className="h-5 w-5 text-primary" />
+                <h2 className="font-display text-xl text-primary-deep">Choose your target CIT-U program</h2>
+              </div>
+              {industryLabel && (
+                <p className="text-sm text-muted-foreground">
+                  Detected industry: <Badge variant="secondary">{industryLabel}</Badge>
+                </p>
               )}
             </div>
 
-            <Button type="submit" size="lg" disabled={busy || !file} className="w-full bg-primary text-primary-foreground hover:bg-primary-deep">
-              {busy && <Loader2 className="h-4 w-4 animate-spin" />}
-              {step === "form" && "Submit & analyze"}
-              {step === "uploading" && "Uploading TOR…"}
-              {step === "ocr" && "Reading transcript with AI…"}
-              {step === "matching" && "Matching subjects…"}
-              {step === "predicting" && "Computing forecast…"}
-            </Button>
-          </form>
-        </Card>
+            {suggesting && (
+              <div className="flex items-center gap-3 rounded-md border border-border bg-accent/30 p-4 text-sm">
+                <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                Reading your job description with Gemini…
+              </div>
+            )}
+
+            {suggestions && suggestions.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-primary-deep">AI recommendations:</p>
+                {suggestions.map((s) => (
+                  <button
+                    key={s.id}
+                    type="button"
+                    onClick={() => setProgramId(s.id)}
+                    className={`w-full rounded-lg border-2 p-4 text-left transition ${
+                      programId === s.id
+                        ? "border-primary bg-primary/5"
+                        : "border-border hover:border-primary/50"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <p className="font-display text-lg text-primary-deep">
+                        {s.code} — {s.name}
+                      </p>
+                      <Badge variant="outline">{Math.round(s.score * 100)}% fit</Badge>
+                    </div>
+                    <p className="mt-1 text-xs text-muted-foreground">{s.reason}</p>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            <div>
+              <Label htmlFor="prog">All programs</Label>
+              <select
+                id="prog"
+                value={programId}
+                onChange={(e) => setProgramId(e.target.value)}
+                className="mt-1 flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+              >
+                {programs.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.code} — {p.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex gap-3">
+              <Button variant="outline" onClick={() => setStep("documents")}>Back</Button>
+              <Button
+                className="flex-1 bg-primary text-primary-foreground hover:bg-primary-deep"
+                onClick={submitAll}
+                disabled={!programId || !tor}
+              >
+                Submit & start AI evaluation
+              </Button>
+            </div>
+          </Card>
+        )}
+
+        {step === "processing" && (
+          <Card className="mt-8 p-10">
+            <div className="flex flex-col items-center text-center">
+              <div className="relative mb-6">
+                <div className="absolute inset-0 animate-ping rounded-full bg-primary/20" />
+                <div className="relative flex h-20 w-20 items-center justify-center rounded-full bg-maroon-gradient">
+                  <ScanLine className="h-10 w-10 text-gold" />
+                </div>
+              </div>
+              <h2 className="font-display text-2xl text-primary-deep">AI is analyzing your transcript</h2>
+              <p className="mt-2 text-muted-foreground">This usually takes 20–40 seconds.</p>
+
+              <div className="mt-8 w-full max-w-md space-y-3 text-left">
+                <PhaseRow active={phase === "uploading"} done={phase !== null && phase !== "uploading"} label="Uploading documents to secure storage" />
+                <PhaseRow active={phase === "ocr"} done={phase === "matching" || phase === "predicting"} label="Reading TOR with Gemini Vision (OCR + quality check)" />
+                <PhaseRow active={phase === "matching"} done={phase === "predicting"} label="Matching against CIT-U curriculum" />
+                <PhaseRow active={phase === "predicting"} done={false} label="Forecasting completion plan" />
+              </div>
+            </div>
+          </Card>
+        )}
       </main>
+    </div>
+  );
+}
+
+function PhaseRow({ active, done, label }: { active: boolean; done: boolean; label: string }) {
+  return (
+    <div className="flex items-center gap-3 rounded-md border border-border bg-accent/20 p-3 text-sm">
+      {done ? (
+        <CheckCircle2 className="h-4 w-4 text-primary" />
+      ) : active ? (
+        <Loader2 className="h-4 w-4 animate-spin text-primary" />
+      ) : (
+        <div className="h-4 w-4 rounded-full border border-muted-foreground/40" />
+      )}
+      <span className={done || active ? "text-primary-deep" : "text-muted-foreground"}>{label}</span>
     </div>
   );
 }
