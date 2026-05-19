@@ -36,7 +36,11 @@ export const runOcrOnTor = createServerFn({ method: "POST" })
     const mime = file.type || (doc.file_path.endsWith(".pdf") ? "application/pdf" : "image/jpeg");
     const dataUrl = `data:${mime};base64,${b64}`;
 
-    const result = await callLovableAIJson<{ subjects: { code: string | null; title: string | null; grade: string | null; units: number | null }[] }>({
+    const result = await callLovableAIJson<{
+      quality?: "ok" | "low";
+      quality_reason?: string;
+      subjects: { code: string | null; title: string | null; grade: string | null; units: number | null }[];
+    }>({
       model: "google/gemini-2.5-flash",
       messages: [
         {
@@ -48,6 +52,16 @@ export const runOcrOnTor = createServerFn({ method: "POST" })
         },
       ],
     });
+
+    if (result.quality === "low") {
+      await supabaseAdmin
+        .from("tor_documents")
+        .update({ ocr_status: "low_quality", ocr_raw: JSON.stringify(result) })
+        .eq("id", doc.id);
+      throw new Error(
+        `Your transcript scan looks unclear (${result.quality_reason ?? "low quality"}). Please re-upload a sharper, well-lit copy.`,
+      );
+    }
 
     const subjects = (result.subjects ?? []).filter((s) => s.code || s.title);
     if (subjects.length === 0) {
