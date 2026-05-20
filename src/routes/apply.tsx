@@ -362,7 +362,19 @@ function ApplyPage() {
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
-                  </div>
+              </div>
+              <div>
+                <Label htmlFor="workdesc">Briefly describe your work</Label>
+                <Textarea
+                  id="workdesc"
+                  rows={4}
+                  placeholder="e.g. I worked 5 years in the IT industry as a C programmer, then 2 years as a Computer Engineering teacher."
+                  value={workDescription}
+                  onChange={(e) => setWorkDescription(e.target.value)}
+                />
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Our AI uses this — together with your work list — to recommend the best CIT-U program for you.
+                </p>
                 ))}
               </div>
               <Button type="submit" size="lg" className="w-full bg-primary text-primary-foreground hover:bg-primary-deep">
