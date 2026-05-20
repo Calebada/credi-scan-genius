@@ -15,7 +15,7 @@ import { runOcrOnTor } from "@/lib/ocr.functions";
 import { runMatching } from "@/lib/matching.functions";
 import { runPrediction } from "@/lib/prediction.functions";
 import { suggestProgramsFromJD } from "@/lib/programs.functions";
-import { Upload, Loader2, FileText, ScanLine, GraduationCap, Sparkles, CheckCircle2 } from "lucide-react";
+import { Upload, Loader2, FileText, ScanLine, GraduationCap, Sparkles, CheckCircle2, Plus, Trash2 } from "lucide-react";
 
 export const Route = createFileRoute("/apply")({
   head: () => ({ meta: [{ title: "New application — ACREDIA" }] }),
