@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { runOcrOnTor } from "@/lib/ocr.functions";
@@ -97,6 +98,7 @@ function ApplyPage() {
   const [workExp, setWorkExp] = useState<{ role: string; years: number }[]>([
     { role: "", years: 0 },
   ]);
+  const [workDescription, setWorkDescription] = useState("");
 
   // documents
   const [tor, setTor] = useState<File | null>(null);
@@ -155,35 +157,50 @@ function ApplyPage() {
     setStep("documents");
   }
 
-  /** Upload JD only to get program suggestions before final submission. */
-  async function analyzeJD() {
-    if (!jobDesc || !user) return;
+  /** Build a free-text summary of the applicant's background for the AI. */
+  function buildWorkText(): string {
+    const lines = workExp
+      .filter((w) => w.role.trim() || w.years > 0)
+      .map((w) => `- ${w.role || "Role"} (${w.years || 0} year${w.years === 1 ? "" : "s"})`);
+    const parts: string[] = [];
+    if (lines.length) parts.push(`Work history:\n${lines.join("\n")}`);
+    if (workDescription.trim()) parts.push(`Description:\n${workDescription.trim()}`);
+    return parts.join("\n\n");
+  }
+
+  /** Run AI suggestions using JD file (if uploaded) and/or work text. */
+  async function runSuggestions() {
+    if (!user) return;
     setSuggesting(true);
     setStep("suggest");
+    setSuggestions(null);
     try {
-      const ext = jobDesc.name.split(".").pop()?.toLowerCase() ?? "pdf";
-      const tmpPath = `${user.id}/_jd-preview/${crypto.randomUUID()}.${ext}`;
-      const { error: upErr } = await supabase.storage
-        .from("supporting-documents")
-        .upload(tmpPath, jobDesc, { upsert: true });
-      if (upErr) throw new Error(upErr.message);
+      let filePath: string | undefined;
+      if (jobDesc) {
+        const ext = jobDesc.name.split(".").pop()?.toLowerCase() ?? "pdf";
+        filePath = `${user.id}/_jd-preview/${crypto.randomUUID()}.${ext}`;
+        const { error: upErr } = await supabase.storage
+          .from("supporting-documents")
+          .upload(filePath, jobDesc, { upsert: true });
+        if (upErr) throw new Error(upErr.message);
+      }
 
-      const res = await suggestFn({ data: { filePath: tmpPath } });
+      const workText = buildWorkText();
+      if (!filePath && !workText) {
+        setSuggestions([]);
+        return;
+      }
+
+      const res = await suggestFn({ data: { filePath, workText: workText || undefined } });
       setSuggestions(res.suggestions as Suggestion[]);
       setIndustryLabel(res.industry ?? null);
       if (res.suggestions[0]) setProgramId(res.suggestions[0].id);
-      toast.success("AI found program matches based on your job description");
+      toast.success("AI found program matches for your background");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "JD analysis failed");
-      setStep("documents");
+      toast.error(err instanceof Error ? err.message : "AI suggestion failed");
     } finally {
       setSuggesting(false);
     }
-  }
-
-  function skipSuggestions() {
-    setSuggestions([]);
-    setStep("suggest");
   }
 
   /* ---------------- Final submission ---------------- */
@@ -348,6 +365,19 @@ function ApplyPage() {
                   </div>
                 ))}
               </div>
+              <div>
+                <Label htmlFor="workdesc">Briefly describe your work</Label>
+                <Textarea
+                  id="workdesc"
+                  rows={4}
+                  placeholder="e.g. I worked 5 years in the IT industry as a C programmer, then 2 years as a Computer Engineering teacher."
+                  value={workDescription}
+                  onChange={(e) => setWorkDescription(e.target.value)}
+                />
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Our AI uses this — together with your work list — to recommend the best CIT-U program for you.
+                </p>
+              </div>
               <Button type="submit" size="lg" className="w-full bg-primary text-primary-foreground hover:bg-primary-deep">
                 Continue to documents
               </Button>
@@ -403,24 +433,14 @@ function ApplyPage() {
 
             <div className="flex gap-3">
               <Button variant="outline" onClick={() => setStep("info")}>Back</Button>
-              {jobDesc ? (
-                <Button
-                  className="flex-1 bg-primary text-primary-foreground hover:bg-primary-deep"
-                  onClick={analyzeJD}
-                  disabled={!tor}
-                >
-                  <Sparkles className="mr-1 h-4 w-4" />
-                  Analyze job description & suggest programs
-                </Button>
-              ) : (
-                <Button
-                  className="flex-1 bg-primary text-primary-foreground hover:bg-primary-deep"
-                  onClick={skipSuggestions}
-                  disabled={!tor}
-                >
-                  Continue
-                </Button>
-              )}
+              <Button
+                className="flex-1 bg-primary text-primary-foreground hover:bg-primary-deep"
+                onClick={runSuggestions}
+                disabled={!tor}
+              >
+                <Sparkles className="mr-1 h-4 w-4" />
+                Analyze background & suggest programs
+              </Button>
             </div>
           </Card>
         )}
