@@ -15,7 +15,7 @@ import { runOcrOnTor } from "@/lib/ocr.functions";
 import { runMatching } from "@/lib/matching.functions";
 import { runPrediction } from "@/lib/prediction.functions";
 import { suggestProgramsFromJD } from "@/lib/programs.functions";
-import { Upload, Loader2, FileText, ScanLine, GraduationCap, Sparkles, CheckCircle2 } from "lucide-react";
+import { Upload, Loader2, FileText, ScanLine, GraduationCap, Sparkles, CheckCircle2, Plus, Trash2 } from "lucide-react";
 
 export const Route = createFileRoute("/apply")({
   head: () => ({ meta: [{ title: "New application — ACREDIA" }] }),
@@ -94,13 +94,12 @@ function ApplyPage() {
   const [programs, setPrograms] = useState<{ id: string; code: string; name: string }[]>([]);
   const [programId, setProgramId] = useState("");
   const [fullName, setFullName] = useState("");
-  const [school, setSchool] = useState("");
-  const [priorProgram, setPriorProgram] = useState("");
-  const [years, setYears] = useState(0);
+  const [workExp, setWorkExp] = useState<{ role: string; years: number }[]>([
+    { role: "", years: 0 },
+  ]);
 
   // documents
   const [tor, setTor] = useState<File | null>(null);
-  const [transferCred, setTransferCred] = useState<File | null>(null);
   const [birthCert, setBirthCert] = useState<File | null>(null);
   const [jobDesc, setJobDesc] = useState<File | null>(null);
   const [employmentCerts, setEmploymentCerts] = useState<File[]>([]);
@@ -198,15 +197,21 @@ function ApplyPage() {
     setPhase("uploading");
 
     try {
+      const cleanedExp = workExp.filter((w) => w.role.trim() || w.years > 0);
+      const totalYears = cleanedExp.reduce((s, w) => s + (w.years || 0), 0);
+      const priorProgramText = cleanedExp
+        .map((w) => `${w.role || "Role"} (${w.years || 0}y)`)
+        .join("; ");
+
       const { data: app, error } = await supabase
         .from("applications")
         .insert({
           applicant_id: user.id,
           program_id: programId,
           full_name: fullName,
-          prior_school: school || null,
-          prior_program: priorProgram || null,
-          years_experience: years,
+          prior_school: null,
+          prior_program: priorProgramText || null,
+          years_experience: totalYears,
           status: "submitted",
         })
         .select("id")
@@ -229,9 +234,8 @@ function ApplyPage() {
       if (docErr || !doc) throw new Error(docErr?.message ?? "TOR record failed");
 
       // supporting docs
-      const supporting: { file: File; type: "job_description" | "certificate" | "transfer_credential" | "birth_certificate" | "employment_cert" }[] = [];
+      const supporting: { file: File; type: "job_description" | "certificate" | "birth_certificate" | "employment_cert" }[] = [];
       if (jobDesc) supporting.push({ file: jobDesc, type: "job_description" });
-      if (transferCred) supporting.push({ file: transferCred, type: "transfer_credential" });
       if (birthCert) supporting.push({ file: birthCert, type: "birth_certificate" });
       for (const f of employmentCerts) supporting.push({ file: f, type: "employment_cert" });
       for (const f of otherCerts) supporting.push({ file: f, type: "certificate" });
@@ -298,25 +302,51 @@ function ApplyPage() {
                 <Label htmlFor="name">Full name</Label>
                 <Input id="name" required value={fullName} onChange={(e) => setFullName(e.target.value)} />
               </div>
-              <div className="grid gap-4 md:grid-cols-2">
-                <div>
-                  <Label htmlFor="school">Prior school</Label>
-                  <Input id="school" value={school} onChange={(e) => setSchool(e.target.value)} />
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label>Work experience</Label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setWorkExp([...workExp, { role: "", years: 0 }])}
+                  >
+                    <Plus className="mr-1 h-3 w-3" /> Add
+                  </Button>
                 </div>
-                <div>
-                  <Label htmlFor="pp">Prior program</Label>
-                  <Input id="pp" value={priorProgram} onChange={(e) => setPriorProgram(e.target.value)} />
-                </div>
-              </div>
-              <div>
-                <Label htmlFor="years">Years of relevant work experience</Label>
-                <Input
-                  id="years"
-                  type="number"
-                  min={0}
-                  value={years}
-                  onChange={(e) => setYears(parseInt(e.target.value) || 0)}
-                />
+                {workExp.map((w, i) => (
+                  <div key={i} className="grid grid-cols-[1fr_120px_auto] gap-2">
+                    <Input
+                      placeholder="Role / company"
+                      value={w.role}
+                      onChange={(e) => {
+                        const next = [...workExp];
+                        next[i] = { ...next[i], role: e.target.value };
+                        setWorkExp(next);
+                      }}
+                    />
+                    <Input
+                      type="number"
+                      min={0}
+                      placeholder="Years"
+                      value={w.years}
+                      onChange={(e) => {
+                        const next = [...workExp];
+                        next[i] = { ...next[i], years: parseInt(e.target.value) || 0 };
+                        setWorkExp(next);
+                      }}
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      disabled={workExp.length === 1}
+                      onClick={() => setWorkExp(workExp.filter((_, idx) => idx !== i))}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
               </div>
               <Button type="submit" size="lg" className="w-full bg-primary text-primary-foreground hover:bg-primary-deep">
                 Continue to documents
@@ -343,12 +373,6 @@ function ApplyPage() {
               file={tor}
               required
               onChange={(fl) => setTor(fl?.[0] ?? null)}
-            />
-            <Uploader
-              label="Certificate of Transfer Credential"
-              hint="From the school of last attendance"
-              file={transferCred}
-              onChange={(fl) => setTransferCred(fl?.[0] ?? null)}
             />
             <Uploader
               label="Birth Certificate (PSA-authenticated)"
