@@ -197,15 +197,21 @@ function ApplyPage() {
     setPhase("uploading");
 
     try {
+      const cleanedExp = workExp.filter((w) => w.role.trim() || w.years > 0);
+      const totalYears = cleanedExp.reduce((s, w) => s + (w.years || 0), 0);
+      const priorProgramText = cleanedExp
+        .map((w) => `${w.role || "Role"} (${w.years || 0}y)`)
+        .join("; ");
+
       const { data: app, error } = await supabase
         .from("applications")
         .insert({
           applicant_id: user.id,
           program_id: programId,
           full_name: fullName,
-          prior_school: school || null,
-          prior_program: priorProgram || null,
-          years_experience: years,
+          prior_school: null,
+          prior_program: priorProgramText || null,
+          years_experience: totalYears,
           status: "submitted",
         })
         .select("id")
