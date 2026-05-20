@@ -98,6 +98,7 @@ function ApplyPage() {
   const [workExp, setWorkExp] = useState<{ role: string; years: number }[]>([
     { role: "", years: 0 },
   ]);
+  const [workDescription, setWorkDescription] = useState("");
 
   // documents
   const [tor, setTor] = useState<File | null>(null);
