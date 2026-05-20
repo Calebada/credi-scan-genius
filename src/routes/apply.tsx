@@ -420,24 +420,14 @@ function ApplyPage() {
 
             <div className="flex gap-3">
               <Button variant="outline" onClick={() => setStep("info")}>Back</Button>
-              {jobDesc ? (
-                <Button
-                  className="flex-1 bg-primary text-primary-foreground hover:bg-primary-deep"
-                  onClick={analyzeJD}
-                  disabled={!tor}
-                >
-                  <Sparkles className="mr-1 h-4 w-4" />
-                  Analyze job description & suggest programs
-                </Button>
-              ) : (
-                <Button
-                  className="flex-1 bg-primary text-primary-foreground hover:bg-primary-deep"
-                  onClick={skipSuggestions}
-                  disabled={!tor}
-                >
-                  Continue
-                </Button>
-              )}
+              <Button
+                className="flex-1 bg-primary text-primary-foreground hover:bg-primary-deep"
+                onClick={runSuggestions}
+                disabled={!tor}
+              >
+                <Sparkles className="mr-1 h-4 w-4" />
+                Analyze background & suggest programs
+              </Button>
             </div>
           </Card>
         )}
