@@ -375,10 +375,10 @@ function ApplyPage() {
               onChange={(fl) => setTor(fl?.[0] ?? null)}
             />
             <Uploader
-              label="Certificate of Transfer Credential"
-              hint="From the school of last attendance"
-              file={transferCred}
-              onChange={(fl) => setTransferCred(fl?.[0] ?? null)}
+              label="Birth Certificate (PSA-authenticated)"
+              hint="Scanned PSA copy"
+              file={birthCert}
+              onChange={(fl) => setBirthCert(fl?.[0] ?? null)}
             />
             <Uploader
               label="Birth Certificate (PSA-authenticated)"
