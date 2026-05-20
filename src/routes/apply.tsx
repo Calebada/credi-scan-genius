@@ -94,13 +94,12 @@ function ApplyPage() {
   const [programs, setPrograms] = useState<{ id: string; code: string; name: string }[]>([]);
   const [programId, setProgramId] = useState("");
   const [fullName, setFullName] = useState("");
-  const [school, setSchool] = useState("");
-  const [priorProgram, setPriorProgram] = useState("");
-  const [years, setYears] = useState(0);
+  const [workExp, setWorkExp] = useState<{ role: string; years: number }[]>([
+    { role: "", years: 0 },
+  ]);
 
   // documents
   const [tor, setTor] = useState<File | null>(null);
-  const [transferCred, setTransferCred] = useState<File | null>(null);
   const [birthCert, setBirthCert] = useState<File | null>(null);
   const [jobDesc, setJobDesc] = useState<File | null>(null);
   const [employmentCerts, setEmploymentCerts] = useState<File[]>([]);
