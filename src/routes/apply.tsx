@@ -302,25 +302,51 @@ function ApplyPage() {
                 <Label htmlFor="name">Full name</Label>
                 <Input id="name" required value={fullName} onChange={(e) => setFullName(e.target.value)} />
               </div>
-              <div className="grid gap-4 md:grid-cols-2">
-                <div>
-                  <Label htmlFor="school">Prior school</Label>
-                  <Input id="school" value={school} onChange={(e) => setSchool(e.target.value)} />
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label>Work experience</Label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setWorkExp([...workExp, { role: "", years: 0 }])}
+                  >
+                    <Plus className="mr-1 h-3 w-3" /> Add
+                  </Button>
                 </div>
-                <div>
-                  <Label htmlFor="pp">Prior program</Label>
-                  <Input id="pp" value={priorProgram} onChange={(e) => setPriorProgram(e.target.value)} />
-                </div>
-              </div>
-              <div>
-                <Label htmlFor="years">Years of relevant work experience</Label>
-                <Input
-                  id="years"
-                  type="number"
-                  min={0}
-                  value={years}
-                  onChange={(e) => setYears(parseInt(e.target.value) || 0)}
-                />
+                {workExp.map((w, i) => (
+                  <div key={i} className="grid grid-cols-[1fr_120px_auto] gap-2">
+                    <Input
+                      placeholder="Role / company"
+                      value={w.role}
+                      onChange={(e) => {
+                        const next = [...workExp];
+                        next[i] = { ...next[i], role: e.target.value };
+                        setWorkExp(next);
+                      }}
+                    />
+                    <Input
+                      type="number"
+                      min={0}
+                      placeholder="Years"
+                      value={w.years}
+                      onChange={(e) => {
+                        const next = [...workExp];
+                        next[i] = { ...next[i], years: parseInt(e.target.value) || 0 };
+                        setWorkExp(next);
+                      }}
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      disabled={workExp.length === 1}
+                      onClick={() => setWorkExp(workExp.filter((_, idx) => idx !== i))}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
               </div>
               <Button type="submit" size="lg" className="w-full bg-primary text-primary-foreground hover:bg-primary-deep">
                 Continue to documents
