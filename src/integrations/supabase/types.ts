@@ -287,6 +287,7 @@ export type Database = {
           flagged_by_applicant: boolean
           id: string
           reason: string | null
+          source: string
           status: Database["public"]["Enums"]["match_status"]
           tor_subject_id: string | null
         }
@@ -300,6 +301,7 @@ export type Database = {
           flagged_by_applicant?: boolean
           id?: string
           reason?: string | null
+          source?: string
           status: Database["public"]["Enums"]["match_status"]
           tor_subject_id?: string | null
         }
@@ -313,6 +315,7 @@ export type Database = {
           flagged_by_applicant?: boolean
           id?: string
           reason?: string | null
+          source?: string
           status?: Database["public"]["Enums"]["match_status"]
           tor_subject_id?: string | null
         }
