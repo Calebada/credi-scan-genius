@@ -56,7 +56,7 @@ function EvalPage() {
     setProgram((appData as any).programs);
     const { data: m } = await supabase
       .from("subject_matches")
-      .select("id, confidence, status, reason, evaluator_note, flagged_by_applicant, applicant_flag_note, tor_subject:tor_subjects(code,title,grade,units), curriculum_subject:curriculum_subjects(code,title,units)")
+      .select("id, confidence, status, reason, evaluator_note, flagged_by_applicant, applicant_flag_note, source, tor_subject:tor_subjects(code,title,grade,units), curriculum_subject:curriculum_subjects(code,title,units)")
       .eq("application_id", id);
     setMatches((m as any) ?? []);
     const { data: p } = await supabase.from("predictions").select("*").eq("application_id", id).maybeSingle();
