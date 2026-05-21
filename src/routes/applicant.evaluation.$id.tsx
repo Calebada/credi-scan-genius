@@ -24,6 +24,7 @@ interface MatchRow {
   evaluator_note: string | null;
   flagged_by_applicant: boolean;
   applicant_flag_note: string | null;
+  source: string | null;
   tor_subject: { code: string | null; title: string | null; grade: string | null; units: number | null } | null;
   curriculum_subject: { code: string; title: string; units: number } | null;
 }
@@ -55,7 +56,7 @@ function EvalPage() {
     setProgram((appData as any).programs);
     const { data: m } = await supabase
       .from("subject_matches")
-      .select("id, confidence, status, reason, evaluator_note, flagged_by_applicant, applicant_flag_note, tor_subject:tor_subjects(code,title,grade,units), curriculum_subject:curriculum_subjects(code,title,units)")
+      .select("id, confidence, status, reason, evaluator_note, flagged_by_applicant, applicant_flag_note, source, tor_subject:tor_subjects(code,title,grade,units), curriculum_subject:curriculum_subjects(code,title,units)")
       .eq("application_id", id);
     setMatches((m as any) ?? []);
     const { data: p } = await supabase.from("predictions").select("*").eq("application_id", id).maybeSingle();
@@ -155,14 +156,27 @@ function EvalPage() {
                     <div className="flex-1">
                       <div className="flex flex-wrap items-center gap-2">
                         <Badge className={info.color + " border"}><Icon className="mr-1 h-3 w-3" />{info.label}</Badge>
+                        {m.source === "work_experience" ? (
+                          <Badge variant="outline" className="border-primary/40 bg-primary/5 text-primary">From work experience</Badge>
+                        ) : (
+                          <Badge variant="outline" className="border-accent text-foreground">From scanned TOR</Badge>
+                        )}
                         <span className="text-xs text-muted-foreground">{Number(m.confidence).toFixed(0)}% confidence</span>
                         {m.flagged_by_applicant && <Badge variant="outline" className="border-warning text-warning-foreground">Flagged</Badge>}
                       </div>
                       <div className="mt-2 grid gap-2 md:grid-cols-2">
                         <div>
-                          <p className="text-xs uppercase tracking-wider text-muted-foreground">From your TOR</p>
-                          <p className="font-medium">{m.tor_subject?.code} · {m.tor_subject?.title}</p>
-                          <p className="text-xs text-muted-foreground">Grade {m.tor_subject?.grade ?? "—"} · {m.tor_subject?.units ?? "?"} units</p>
+                          <p className="text-xs uppercase tracking-wider text-muted-foreground">
+                            {m.source === "work_experience" ? "Source" : "From your TOR"}
+                          </p>
+                          {m.source === "work_experience" ? (
+                            <p className="text-sm italic text-muted-foreground">Credited from your work experience / description</p>
+                          ) : (
+                            <>
+                              <p className="font-medium">{m.tor_subject?.code} · {m.tor_subject?.title}</p>
+                              <p className="text-xs text-muted-foreground">Grade {m.tor_subject?.grade ?? "—"} · {m.tor_subject?.units ?? "?"} units</p>
+                            </>
+                          )}
                         </div>
                         <div>
                           <p className="text-xs uppercase tracking-wider text-muted-foreground">CIT-U equivalent</p>

@@ -276,7 +276,7 @@ function ApplyPage() {
       await ocrFn({ data: { applicationId: app.id, torDocumentId: doc.id } });
 
       setPhase("matching");
-      await matchFn({ data: { applicationId: app.id } });
+      await matchFn({ data: { applicationId: app.id, workText: buildWorkText() || undefined } });
 
       setPhase("predicting");
       await predictFn({ data: { applicationId: app.id } });

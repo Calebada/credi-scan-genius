@@ -107,10 +107,24 @@ function Review() {
               <Card key={m.id} className="p-4">
                 <div className="flex items-start justify-between gap-2">
                   <div className="text-sm">
-                    <p className="font-medium">{m.tor_subject?.code} · {m.tor_subject?.title}</p>
-                    <p className="text-xs text-muted-foreground">Grade {m.tor_subject?.grade ?? "—"} · {m.tor_subject?.units ?? "?"}u</p>
+                    {m.source === "work_experience" ? (
+                      <>
+                        <p className="font-medium italic text-muted-foreground">Credit from work experience</p>
+                        <p className="text-xs text-muted-foreground">No TOR subject — based on applicant's work history</p>
+                      </>
+                    ) : (
+                      <>
+                        <p className="font-medium">{m.tor_subject?.code} · {m.tor_subject?.title}</p>
+                        <p className="text-xs text-muted-foreground">Grade {m.tor_subject?.grade ?? "—"} · {m.tor_subject?.units ?? "?"}u</p>
+                      </>
+                    )}
                   </div>
-                  <Badge>{Number(m.confidence).toFixed(0)}%</Badge>
+                  <div className="flex flex-col items-end gap-1">
+                    <Badge>{Number(m.confidence).toFixed(0)}%</Badge>
+                    <Badge variant="outline" className={m.source === "work_experience" ? "border-primary/40 text-primary" : ""}>
+                      {m.source === "work_experience" ? "Work exp" : "TOR"}
+                    </Badge>
+                  </div>
                 </div>
                 <div className="mt-2 text-xs text-muted-foreground">→ {m.curriculum_subject ? `${m.curriculum_subject.code} ${m.curriculum_subject.title}` : "— no match —"}</div>
                 {m.flagged_by_applicant && <p className="mt-1 text-xs text-warning-foreground">Applicant flag: {m.applicant_flag_note}</p>}
