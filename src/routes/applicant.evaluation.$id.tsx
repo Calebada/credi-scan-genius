@@ -157,9 +157,9 @@ function EvalPage() {
                       <div className="flex flex-wrap items-center gap-2">
                         <Badge className={info.color + " border"}><Icon className="mr-1 h-3 w-3" />{info.label}</Badge>
                         {m.source === "work_experience" ? (
-                          <Badge variant="outline" className="border-primary/40 bg-primary/5 text-primary">From work experience</Badge>
+                          <Badge className="bg-yellow-100 text-yellow-800 border border-yellow-300 hover:bg-yellow-200">From work experience</Badge>
                         ) : (
-                          <Badge variant="outline" className="border-accent text-foreground">From scanned TOR</Badge>
+                          <Badge className="bg-green-100 text-green-800 border border-green-300 hover:bg-green-200">From scanned TOR</Badge>
                         )}
                         <span className="text-xs text-muted-foreground">{Number(m.confidence).toFixed(0)}% confidence</span>
                         {m.flagged_by_applicant && <Badge variant="outline" className="border-warning text-warning-foreground">Flagged</Badge>}

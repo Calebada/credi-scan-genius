@@ -121,9 +121,11 @@ function Review() {
                   </div>
                   <div className="flex flex-col items-end gap-1">
                     <Badge>{Number(m.confidence).toFixed(0)}%</Badge>
-                    <Badge variant="outline" className={m.source === "work_experience" ? "border-primary/40 text-primary" : ""}>
-                      {m.source === "work_experience" ? "Work exp" : "TOR"}
-                    </Badge>
+                    {m.source === "work_experience" ? (
+                      <Badge className="bg-yellow-100 text-yellow-800 border border-yellow-300 hover:bg-yellow-200">Work exp</Badge>
+                    ) : (
+                      <Badge className="bg-green-100 text-green-800 border border-green-300 hover:bg-green-200">TOR</Badge>
+                    )}
                   </div>
                 </div>
                 <div className="mt-2 text-xs text-muted-foreground">→ {m.curriculum_subject ? `${m.curriculum_subject.code} ${m.curriculum_subject.title}` : "— no match —"}</div>
