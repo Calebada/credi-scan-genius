@@ -109,18 +109,6 @@ function ApplyPage() {
   const [suggestions, setSuggestions] = useState<Suggestion[] | null>(null);
   const [industryLabel, setIndustryLabel] = useState<string | null>(null);
 
-  // processing
-  const [phase, setPhase] = useState<
-    | "uploading"
-    | "ocr"
-    | "matching"
-    | "predicting"
-    | null
-  >(null);
-
-  const ocrFn = useServerFn(runOcrOnTor);
-  const matchFn = useServerFn(runMatching);
-  const predictFn = useServerFn(runPrediction);
   const suggestFn = useServerFn(suggestProgramsFromJD);
 
   useEffect(() => {
