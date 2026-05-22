@@ -487,7 +487,7 @@ function ApplyPage() {
                 onClick={submitAll}
                 disabled={!programId || !tor}
               >
-                Submit & start AI evaluation
+                Submit application
               </Button>
             </div>
           </Card>
