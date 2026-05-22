@@ -53,10 +53,28 @@ function Review() {
       const { data: c } = await supabase.from("curriculum_subjects").select("id, code, title, units").eq("program_id", appData.program_id).order("code");
       setCurriculum(c ?? []);
     }
-    const { data: doc } = await supabase.from("tor_documents").select("file_path").eq("application_id", id).maybeSingle();
+    const { data: doc } = await supabase.from("tor_documents").select("id, file_path").eq("application_id", id).maybeSingle();
     if (doc) {
+      setTorDocId(doc.id);
       const { data: signed } = await supabase.storage.from("tor-documents").createSignedUrl(doc.file_path, 600);
       setTorUrl(signed?.signedUrl ?? null);
+    } else {
+      setTorDocId(null);
+      setTorUrl(null);
+    }
+
+    const { data: sup } = await supabase
+      .from("supporting_documents")
+      .select("id, doc_type, original_name, file_path")
+      .eq("application_id", id);
+    if (sup) {
+      const enriched = await Promise.all(
+        sup.map(async (s) => {
+          const { data: signed } = await supabase.storage.from("supporting-documents").createSignedUrl(s.file_path, 600);
+          return { id: s.id, doc_type: s.doc_type, original_name: s.original_name, url: signed?.signedUrl ?? "" };
+        }),
+      );
+      setSupportingDocs(enriched);
     }
   }, [id]);
 
