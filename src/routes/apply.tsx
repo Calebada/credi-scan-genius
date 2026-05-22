@@ -20,7 +20,7 @@ export const Route = createFileRoute("/apply")({
   component: ApplyPage,
 });
 
-type Step = "info" | "documents" | "suggest" | "processing" | "done";
+type Step = "info" | "documents" | "suggest" | "submitting";
 
 type Suggestion = { id: string; code: string; name: string; reason: string; score: number };
 
