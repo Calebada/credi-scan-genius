@@ -176,6 +176,11 @@ function Review() {
             </p>
           </Card>
         )}
+
+        <div className="grid gap-6 lg:grid-cols-2">
+          <Card className="overflow-hidden">
+            <div className="border-b border-border bg-accent/30 px-4 py-2 font-display text-lg text-primary-deep">TOR document</div>
+            {torUrl ? (
               torUrl.match(/\.pdf/i) ? (
                 <iframe src={torUrl} className="h-[700px] w-full" />
               ) : (
