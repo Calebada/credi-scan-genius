@@ -280,7 +280,7 @@ function ApplyPage() {
             <span className={step === "info" ? "font-semibold text-primary" : ""}>1. Personal info</span>
             <span className={step === "documents" ? "font-semibold text-primary" : ""}>2. Upload documents</span>
             <span className={step === "suggest" ? "font-semibold text-primary" : ""}>3. Pick program</span>
-            <span className={step === "processing" ? "font-semibold text-primary" : ""}>4. AI evaluation</span>
+            <span className={step === "submitting" ? "font-semibold text-primary" : ""}>Submit</span>
           </div>
         </div>
 
