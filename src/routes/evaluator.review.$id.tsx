@@ -99,6 +99,24 @@ function Review() {
     navigate({ to: "/evaluator/queue" });
   }
 
+  async function runEvaluation() {
+    if (!torDocId) { toast.error("No TOR document uploaded"); return; }
+    try {
+      setRunning("ocr");
+      await ocrFn({ data: { applicationId: id, torDocumentId: torDocId } });
+      setRunning("matching");
+      await matchFn({ data: { applicationId: id, workText: app?.prior_program ?? undefined } });
+      setRunning("predicting");
+      await predictFn({ data: { applicationId: id } });
+      toast.success("AI evaluation complete");
+      await load();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "AI evaluation failed");
+    } finally {
+      setRunning(null);
+    }
+  }
+
   if (!app) return <div className="flex min-h-screen items-center justify-center text-muted-foreground">Loading…</div>;
 
   return (
